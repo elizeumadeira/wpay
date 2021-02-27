@@ -114,4 +114,39 @@ class UrlController extends Controller
             'message' => 'Url excluída com sucesso',
         ], 200);
     }
+
+    public  function get_data_from_url(){
+        $urls = Url::where('status_code', '!=', 200)->orWhereNull('status_code')->get();
+
+        foreach($urls as $url){
+            $this->get_url_data($url);
+        }
+    }
+
+    public function get_url_data(Url $url){
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url->url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "GET",
+            CURLOPT_FOLLOWLOCATION => true
+        ]);
+
+        
+        $response = curl_exec($curl);
+        $httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+        $body = substr($response, $header_size);
+
+        curl_close($curl);
+
+        $url->body = $body;
+        $url->status_code = $httpcode;
+        $url->save();
+    }
 }

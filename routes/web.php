@@ -3,7 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-
+use App\Http\Controllers\UrlController;
+use App\Url;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -32,3 +33,9 @@ Route::group(['middleware' => ['jwt.verify']], function () {
 
 Route::post('login', 'AuthController@login')->name('login');
 Route::get('logout', 'AuthController@logout');
+Route::get('teste', 'UrlController@index');
+// Route::get('teste/{id}', function (Request $request, $id) {
+    //     $url = Url::find($id);
+    //     UrlController::get_url_data($url);
+    // });
+// Route::get('teste', 'UrlController@get_data_from_url');

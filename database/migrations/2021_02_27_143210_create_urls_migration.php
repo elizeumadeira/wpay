@@ -17,7 +17,7 @@ class CreateUrlsMigration extends Migration
             $table->id();
             $table->string('url', 240);
             $table->integer('status_code')->nullable();
-            $table->text('body')->nullable();
+            $table->longText('body')->nullable();
             $table->timestamps();
         });
     }

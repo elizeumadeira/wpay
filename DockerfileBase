@@ -1,0 +1,93 @@
+#FROM php:7.2-apache
+FROM ubuntu:18.04
+
+RUN apt-get -y update --fix-missing
+RUN apt-get upgrade -y
+RUN apt-get -y install software-properties-common --fix-missing
+RUN add-apt-repository ppa:ondrej/php
+
+# Timezone settings
+    RUN apt-get install -y tzdata
+    #RUN echo "America/Sao_Paulo" > /etc/timezone
+    RUN dpkg-reconfigure -f noninteractive tzdata
+
+# Install useful tools
+    RUN apt-get -y update
+    RUN apt-get -y install apt-utils nano wget ssh apache2 php7.3 tzdata --fix-missing
+
+# Install important libraries
+    RUN apt-get -y install build-essential git curl zip php7.3-curl --fix-missing
+
+# Composer
+    RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Install main applications
+    RUN apt-get -y install php7.3-mysql php7.3-gd php7.3-mbstring php7.3-bcmath php7.3-xml libmcrypt-dev php7.3-intl
+    RUN apt-get -y install cron
+
+# Configuration for Apache
+    RUN rm -rf /etc/apache2/sites-enabled/000-default.conf
+    ADD deploy/config/000-default.conf /etc/apache2/sites-available/
+    RUN ln -s /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-enabled/
+    RUN a2enmod rewrite
+
+# Add root folder
+    ADD . /var/www/html/
+
+# Laravel writing rights
+    RUN chgrp -R www-data /var/www/html/storage /var/www/html/bootstrap/cache
+    RUN chmod -R ug+rwx /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Create Laravel folders (mandatory)
+    RUN mkdir -p /var/www/html/storage/framework
+    RUN mkdir -p /var/www/html/storage/framework/sessions
+    RUN mkdir -p /var/www/html/storage/framework/views
+    RUN mkdir -p /var/www/html/storage/meta
+    RUN mkdir -p /var/www/html/storage/cache
+    RUN mkdir -p /var/www/html/storage/logs
+    RUN mkdir -p /var/www/html/public/uploads
+
+# Making Cron
+    COPY deploy/cron /etc/cron.d/laravel-schedules
+    RUN chmod 0644 /etc/cron.d/laravel-schedules
+    RUN crontab /etc/cron.d/laravel-schedules
+    RUN chmod 777 /var/www/html/deploy/run.sh
+
+# Change folder permission
+    RUN chmod -R 0777 /var/www/html/storage/
+    RUN chmod -R 0777 /var/www/html/storage/logs/
+    RUN chmod -R 0777 /var/www/html/public/uploads/
+    RUN chown -R www-data:www-data /var/www/html
+
+# Override some PHP config values
+    RUN sed -i "s/max_input_time = 60/max_input_time = 0/" /etc/php/7.3/apache2/php.ini
+    RUN sed -i "s/memory_limit = 128M/memory_limit = 256M/" /etc/php/7.3/apache2/php.ini
+    RUN sed -i "s/post_max_size = 8M/post_max_size = 0/" /etc/php/7.3/apache2/php.ini
+    RUN sed -i "s/max_execution_time = 30/max_execution_time = 0/" /etc/php/7.3/apache2/php.ini
+    RUN sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 0/" /etc/php/7.3/apache2/php.ini
+
+# Change .ENV files
+    #RUN rm -rf /var/www/html/.env
+    #RUN rm -rf /var/www/html/.env.development
+    #RUN mv /var/www/html/.env.production /var/www/html/.env
+
+# Set timezone
+    ENV TZ=America/Sao_Paulo
+    RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Clean Laravel cache and enable apache modules
+    RUN cd /var/www/html && composer install
+    RUN php /var/www/html/artisan route:clear
+    RUN php /var/www/html/artisan config:clear
+    RUN php /var/www/html/artisan cache:clear
+    RUN php /var/www/html/artisan config:cache
+    RUN a2enmod rewrite headers
+    RUN service apache2 restart
+
+    # RUN php artisan route:clear
+    # RUN php artisan config:clear
+    # RUN php artisan cache:clear
+
+EXPOSE 80 3308
+
+CMD ["/var/www/html/deploy/run.sh"]
