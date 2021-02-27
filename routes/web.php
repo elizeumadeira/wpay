@@ -22,12 +22,13 @@ Route::get('/', function () {
 Route::group(['middleware' => ['jwt.verify']], function () {
     Route::post('refresh', 'AuthController@refresh');
     Route::get('me', 'AuthController@me');
+
+    Route::get('urls', 'UrlController@index');
+    Route::post('url', 'UrlController@store');
+    Route::get('url/{id}', 'UrlController@show');
+    Route::put('url/{id}', 'UrlController@update');
+    Route::delete('url/{id}', 'UrlController@destroy');
 });
 
 Route::post('login', 'AuthController@login')->name('login');
 Route::get('logout', 'AuthController@logout');
-
-
-Route::get('teste', function (Request $request, Response $response) {
-    return response()->json(['message' => 'API Laravel', 'status' => 'Connected!!']);
-});
