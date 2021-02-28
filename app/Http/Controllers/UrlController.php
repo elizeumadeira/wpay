@@ -123,6 +123,11 @@ class UrlController extends Controller
         }
     }
 
+    public function show_content($id){
+        $url = Url::find($id);
+        echo $url->body;
+    }
+
     public function get_url_data(Url $url){
         $curl = curl_init();
 

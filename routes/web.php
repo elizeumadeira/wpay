@@ -39,3 +39,5 @@ Route::get('teste', 'UrlController@index');
     //     UrlController::get_url_data($url);
     // });
 // Route::get('teste', 'UrlController@get_data_from_url');
+
+Route::get('url/show_content/{id}', 'UrlController@show_content');
